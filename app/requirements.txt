@@ -1,0 +1,11 @@
+psycopg2-binary
+sqlmodel
+uvicorn
+fastapi
+bcrypt
+pydantic
+pandas
+clearml
+catboost
+python-dateutil
+python-dotenv
