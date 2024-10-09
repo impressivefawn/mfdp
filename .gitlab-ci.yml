@@ -3,22 +3,19 @@ stages:
   - deploy
 
 variables:
-  POSTGRES_USER: "your_postgres_user"
-  POSTGRES_PASSWORD: "your_postgres_password"
-  POSTGRES_DB: "your_postgres_db"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgres"
+  POSTGRES_DB: "sample_db"
   DB_HOST: "database"
   DB_PORT: 5432
-  DB_USER: "your_db_user"
-  DB_PASS: "your_db_password"
-  DB_NAME: "your_db_name"
-  CLEARML_API_HOST: "your_clearml_api_host"
-  CLEARML_WEB_HOST: "your_clearml_web_host"
-  CLEARML_FILES_HOST: "your_clearml_files_host"
-  CLEARML_ACCESS_KEY: "your_clearml_access_key"
-  CLEARML_SECRET_KEY: "your_clearml_secret_key"
-  RABBITMQ_DEFAULT_USER: "your_rabbitmq_user"
-  RABBITMQ_DEFAULT_PASS: "your_rabbitmq_password"
-
+  DB_USER: "postgres"
+  DB_PASS: "postgres"
+  DB_NAME: "sample_db"
+  CLEARML_API_HOST: "https://api.clear.ml"
+  CLEARML_WEB_HOST: "https://app.clear.ml"
+  CLEARML_FILES_HOST: "https://files.clear.ml"
+  CLEARML_ACCESS_KEY: "E15TPK6JGIWCCDBJ58ZHPRUO29MFWM"
+  CLEARML_SECRET_KEY: "mfFbvwqCg2of2VUZqfqkvEqS2M2Y6fqIwYoBDmu8wPBegQ_0NDx3cn_mY9gn9kXU-do"
 services:
   - docker:docker:27.3.1
 
