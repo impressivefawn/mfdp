@@ -5,7 +5,7 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=sample_db
+      - POSTGRES_DB=${POSTGRES_DB}
     expose:
       - 5432
     volumes:
@@ -23,11 +23,18 @@ services:
     volumes:
       - ./app:/app
     environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
       - CLEARML_API_HOST=${CLEARML_API_HOST}
       - CLEARML_WEB_HOST=${CLEARML_WEB_HOST}
       - CLEARML_FILES_HOST=${CLEARML_FILES_HOST}
       - CLEARML_ACCESS_KEY=${CLEARML_ACCESS_KEY}
       - CLEARML_SECRET_KEY=${CLEARML_SECRET_KEY}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
     depends_on:
       database:
         condition: service_healthy
@@ -41,16 +48,21 @@ services:
       - app
       - database
 
-volumes:
-  postgres_data:
-
-
-
- # streamlit:
-  #   build: ./streamlit
+  # rabbitmq:
+  #   image: rabbitmq:management
   #   ports:
-  #     - 8888:8501
-  #   volumes:
-  #     - ./streamlit:/streamlit
+  #     - 5672:5672
+  #     - 15672:15672
+  #   environment:
+  #     - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+  #     - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
   #   depends_on:
   #     - app
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmqctl", "status"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  postgres_data:

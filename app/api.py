@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks
 from crud import create_loan_application, get_all_macroeconomic_data, get_all_macroeconomic_data_sme3_lag1, get_all_earnings, get_client_by_email, get_client_by_id, get_session, data_preparation, predict_application_status, load_model
 from main import init_db
 from validation import LoanApplicationCreate, MacroeconomicDataResponse, EarningsResponse, ClientResponse
 from models import LoanApplication
 from datetime import datetime
 from typing import List, Optional
+import logging
 
+
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
@@ -40,31 +43,37 @@ def add_loan_application(
 
     client = get_client_by_email(loan_application.client_email)
 
+    if not client:
+        logging.error(f"Client not found for email {loan_application.client_email}")
+        raise HTTPException(status_code=404, detail="Client not found.")
+
+    logging.info(f"Client found: {client.id} for email {loan_application.client_email}")
+
     # Pass application_date to data_preparation
     prediction_data = data_preparation(
         client_email=loan_application.client_email,
         loan_amount=loan_application.loan_amount,
-        application_date=loan_application.application_date if loan_application.application_date else datetime.now(),
+        application_date=loan_application.application_date,
         repayment_term_periods=loan_application.repayment_term_periods
     )
 
     predicted_status = predict_application_status(prediction_data)
 
-    application_date = loan_application.application_date if loan_application.application_date else datetime.now()
-
     loan_app = LoanApplication(
         client_id=client.id,
         loan_amount=loan_application.loan_amount,
-        application_date=application_date,
+        application_date=loan_application.application_date,
         application_status=predicted_status.value,
         repayment_term_periods=loan_application.repayment_term_periods
     )
 
     try:
         created_loan_app = create_loan_application(loan_app)
+        logging.info(f"Loan application created successfully: {created_loan_app}")
         return created_loan_app
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logging.error(f"Error creating loan application: {e}")
+        raise HTTPException(status_code=400, detail="Failed to create loan application.")
 
 
 @app.get("/macroeconomic-data", response_model=List[MacroeconomicDataResponse])

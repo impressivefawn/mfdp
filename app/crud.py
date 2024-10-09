@@ -10,6 +10,10 @@ from pandas.tseries.offsets import MonthEnd
 from dateutil.relativedelta import relativedelta
 import os
 from catboost import CatBoostClassifier
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 @contextmanager
@@ -198,14 +202,10 @@ def get_client_by_email(email: str) -> Optional[Client]:
     try:
         statement = select(Client).where(Client.email == email)
         client = session.exec(statement).first()
-
-        if client is None:
-            raise ValueError(f"No client found with email: {email}")
-
         return client
     except Exception as e:
-        print(f"Error retrieving client by email {email}: {e}")
-        raise
+        logging.error(f"Error retrieving client by email {email}: {e}")
+        return None
     finally:
         session.close()
 
@@ -364,7 +364,7 @@ def get_age_group(age):
 best_model = None
 
 
-def load_model():
+def load_model() -> None:
     """Load the trained model from ClearML."""
     global best_model
 
@@ -386,13 +386,22 @@ def load_model():
     os.environ['CLEARML_API_ACCESS_KEY'] = clearml_access_key
     os.environ['CLEARML_API_SECRET_KEY'] = clearml_secret_key
 
-    # Load the trained model from ClearML
-    task_model = Task.get_task(project_name='mfdp', task_name='Train and Save CatBoost Model')
-    model_file_path = task_model.artifacts['Best CatBoost Model'].get_local_copy()
+    try:
+        task_model = Task.get_task(project_name='mfdp', task_name='Train and Save CatBoost Model')
+        model_file_path = task_model.artifacts['Best CatBoost Model'].get_local_copy()
 
-    # Load the model into the global variable
-    best_model = CatBoostClassifier()
-    best_model.load_model(model_file_path)
+        # Validate model file path
+        if not model_file_path or not os.path.exists(model_file_path):
+            raise FileNotFoundError("Model file could not be found.")
+
+        best_model = CatBoostClassifier()
+        best_model.load_model(model_file_path)
+
+        logging.info("Model loaded successfully.")
+
+    except Exception as e:
+        logging.error(f"Failed to load model: {e}")
+        raise
 
 
 def data_preparation(client_email: str, loan_amount: float, application_date: datetime, repayment_term_periods: int) -> pd.DataFrame:
@@ -485,14 +494,18 @@ def data_preparation(client_email: str, loan_amount: float, application_date: da
 def predict_application_status(df: pd.DataFrame) -> ApplicationStatus:
     """Predict application status based on prepared data."""
 
-    # Ensure the DataFrame has exactly one row
     if df.shape[0] != 1:
         raise ValueError("Input DataFrame must contain exactly one row.")
 
     # Specify columns used for prediction
-    columns_to_predict = ['AGE', 'MALE', 'MONEY-SUPPLY-M2', 
-                          'CONSUMER-CONFIDENCE', 'EXPORT-PRICES', 
+    columns_to_predict = ['AGE', 'MALE', 'MONEY-SUPPLY-M2',
+                          'CONSUMER-CONFIDENCE', 'EXPORT-PRICES',
                           'USDTWD', 'TWBLR', 'UNEMPLOYMENT-RATE', 'DTI']
+
+    # Check for required columns in DataFrame
+    missing_columns = [col for col in columns_to_predict if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing columns in input DataFrame: {missing_columns}")
 
     # Extract features from the input DataFrame
     features_to_predict = df[columns_to_predict]
@@ -501,9 +514,7 @@ def predict_application_status(df: pd.DataFrame) -> ApplicationStatus:
     y_pred_proba = best_model.predict_proba(features_to_predict)[:, 1]
 
     # Determine application status based on predicted probability
-    predicted_status = ApplicationStatus.DENIED if y_pred_proba[0] >= 0.5 else ApplicationStatus.APPROVED
-
-    print("Predicted Probability:", y_pred_proba[0])
-    print("Predicted Class:", predicted_status)
+    threshold = 0.5
+    predicted_status = ApplicationStatus.DENIED if y_pred_proba[0] >= threshold else ApplicationStatus.APPROVED
 
     return predicted_status
