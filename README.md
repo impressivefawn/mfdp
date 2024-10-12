@@ -26,3 +26,12 @@ https://colab.research.google.com/drive/1TghuaK3PI7eHV4AjxSBUrTXmEvIYzDf4?usp=sh
 Выполнено в Google Colab
 
 https://colab.research.google.com/drive/1h3bVC1smFGLep3R0MEReQauM9UIwp1hb?usp=sharing
+
+
+## Урок 6. Упаковка. MVP
+
+- Спроектирована доменная модель сервиса
+- Хранение данных обеспечено за счет СУБД
+- Разработан REST интерфейс для взаимодействия с сервисом
+- Критические компоненты сервиса покрыты тестами
+- Развертывание сервиса выполнено с применением инструментов Docker Compose
